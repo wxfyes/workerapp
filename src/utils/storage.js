@@ -591,3 +591,107 @@ export function seedDemoData() {
 
   return true;
 }
+
+// 软件版本号与在线更新配置
+export const CURRENT_APP_VERSION = 'v1.0.1';
+export const GITHUB_REPO = 'wxfyes/workerapp';
+
+function compareVersions(v1, v2) {
+  const p1 = (v1 || '').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+  const p2 = (v2 || '').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+  const len = Math.max(p1.length, p2.length);
+  for (let i = 0; i < len; i++) {
+    const num1 = p1[i] || 0;
+    const num2 = p2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+}
+
+/**
+ * 检查 GitHub Releases 在线更新
+ */
+export async function checkForAppUpdate() {
+  const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+  try {
+    const res = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`网络响应状态: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const latestVersion = (data.tag_name || '').trim();
+    const releaseTitle = data.name || latestVersion;
+    const releaseNotes = data.body || '';
+    const htmlUrl = data.html_url || `https://github.com/${GITHUB_REPO}/releases`;
+
+    // 寻找 apk 下载文件
+    let downloadUrl = '';
+    if (data.assets && Array.isArray(data.assets)) {
+      const apkAsset = data.assets.find(a => a.name && a.name.endsWith('.apk'));
+      if (apkAsset) {
+        downloadUrl = apkAsset.browser_download_url;
+      }
+    }
+    if (!downloadUrl) {
+      downloadUrl = `https://github.com/${GITHUB_REPO}/releases/download/${latestVersion}/WorkerApp_${latestVersion}.apk`;
+    }
+
+    // 语义化版本比对
+    const hasUpdate = compareVersions(latestVersion, CURRENT_APP_VERSION) > 0;
+
+    return {
+      success: true,
+      hasUpdate,
+      currentVersion: CURRENT_APP_VERSION,
+      latestVersion,
+      releaseTitle,
+      releaseNotes,
+      downloadUrl,
+      htmlUrl
+    };
+  } catch (err) {
+    console.error('检查更新失败', err);
+    return {
+      success: false,
+      error: err.message || '网络连接异常，无法访问更新源'
+    };
+  }
+}
+
+/**
+ * 将备份数据压缩成 Base64 文本口令，方便直接发微信
+ */
+export function exportBackupBase64() {
+  const jsonStr = exportAllDataJSON();
+  try {
+    // UTF-8 to Base64
+    return btoa(unescape(encodeURIComponent(jsonStr)));
+  } catch (e) {
+    return btoa(jsonStr);
+  }
+}
+
+/**
+ * 从 Base64 文本口令恢复数据
+ */
+export function importBackupBase64(base64Str) {
+  try {
+    const cleanStr = (base64Str || '').trim();
+    const jsonStr = decodeURIComponent(escape(atob(cleanStr)));
+    return importAllDataJSON(jsonStr);
+  } catch (e) {
+    try {
+      // 兼容直接粘贴的 JSON
+      return importAllDataJSON(base64Str);
+    } catch (err) {
+      return { success: false, error: '口令解析失败，请检查格式' };
+    }
+  }
+}
