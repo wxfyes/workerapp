@@ -432,9 +432,10 @@ const calendarCells = computed(() => {
       const hwTotal = Number(dayRecord.hourlyWork?.total) || 0;
       // 附加补贴
       const bonus = Number(dayRecord.dailyBonus) || 0;
-      // 餐费补贴: 出勤全天自动计入6元，不上班为0
+      // 餐费补贴: 只有出勤且有实际做工流水才计入，未输入记工默认休班不计入
+      const hasWork = itemsTotal > 0 || hwTotal > 0 || bonus > 0 || (dayRecord.items && dayRecord.items.length > 0);
       const mealRate = Number(appSettings.value?.mealSubsidyDaily !== undefined ? appSettings.value.mealSubsidyDaily : 6.0);
-      const mealSubsidy = attendanceType === 'work' ? mealRate : 0;
+      const mealSubsidy = (attendanceType === 'work' && hasWork) ? mealRate : 0;
       totalMoney = itemsTotal + hwTotal + mealSubsidy + bonus;
     }
 
@@ -500,9 +501,10 @@ const selectedDayRecord = computed(() => {
   // 零工总金额
   const dayHourlyTotal = Number(dayRecord.hourlyWork?.total) || 0;
 
-  // 出勤餐费补贴
+  // 出勤餐费补贴: 只有出勤且当天有实际做工流水才计入，未输入视为休班0元
+  const hasWork = dayPieceMoney > 0 || daySetupFee > 0 || dayHourlyTotal > 0 || (Number(dayRecord.dailyBonus) || 0) > 0 || (dayRecord.items && dayRecord.items.length > 0);
   const mealRate = Number(appSettings.value?.mealSubsidyDaily !== undefined ? appSettings.value.mealSubsidyDaily : 6.0);
-  const dayMealSubsidy = (dayRecord.attendanceType || 'work') === 'work' ? mealRate : 0;
+  const dayMealSubsidy = ((dayRecord.attendanceType || 'work') === 'work' && hasWork) ? mealRate : 0;
 
   // 当日总金额 = 计件工钱 + 调机费 + 零工工钱 + 餐费补贴 + 附加补贴
   const dayTotalMoney = dayPieceMoney + daySetupFee + dayHourlyTotal + dayMealSubsidy + (Number(dayRecord.dailyBonus) || 0);

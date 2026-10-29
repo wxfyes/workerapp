@@ -407,12 +407,15 @@ export function calculateMonthSummary(yearMonth) {
       hourlyWorkTotal += dayHourlyTotal;
       hourlyHoursTotal += dayHourlyHours;
 
-      // 餐费补贴：出勤全天自动计入，不上班（公休、事假、病假等）自动为 0
+      // 餐费补贴与出勤天数：有实际做工流水(计件/调机/零工/补贴)才正式计入出勤与餐补；未输入默认休班，不计入！
+      const hasWorkRecord = dayPieceMoney > 0 || daySetupFee > 0 || dayHourlyTotal > 0 || (Number(rec.dailyBonus) || 0) > 0 || (rec.items && rec.items.length > 0);
       let dayMealSubsidy = 0;
       if (attType === 'work') {
-        workDays += 1;
-        dayMealSubsidy = mealSubsidyDaily;
-        mealSubsidyTotal += dayMealSubsidy;
+        if (hasWorkRecord) {
+          workDays += 1;
+          dayMealSubsidy = mealSubsidyDaily;
+          mealSubsidyTotal += dayMealSubsidy;
+        }
       } else if (attType === 'public_rest') {
         publicRestDays += 1;
       } else if (attType === 'annual_leave') {
@@ -677,7 +680,7 @@ export function seedDemoData() {
 }
 
 // 软件版本号与在线更新配置
-export const CURRENT_APP_VERSION = 'v1.0.3';
+export const CURRENT_APP_VERSION = 'v1.0.4';
 export const GITHUB_REPO = 'wxfyes/workerapp';
 
 function compareVersions(v1, v2) {

@@ -111,19 +111,25 @@
         </button>
       </div>
 
-      <!-- 出勤餐费补贴状态条 (全天出勤自动计入6元，不上班不计) -->
+      <!-- 出勤餐费补贴状态条 (出工才算真正出勤，未记工输入默认休班不计入) -->
       <div style="margin-top: 10px; padding: 6px 10px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <span>🍱</span>
-          <span v-if="record.attendanceType === 'work'" style="color: var(--accent-gold-light); font-weight: 600;">
-            出勤餐补: <b>+¥{{ formatMoney(dayMealSubsidy) }}</b> (出勤全天自动计入)
+          <!-- 场景1: 出勤且已有做工记账 -->
+          <span v-if="record.attendanceType === 'work' && hasWorkRecord" style="color: var(--accent-gold-light); font-weight: 600;">
+            出勤餐补: <b>+¥{{ formatMoney(dayMealSubsidy) }}</b> (已出工，自动计入)
           </span>
+          <!-- 场景2: 出勤但尚未记工 (什么都没输入) -->
+          <span v-else-if="record.attendanceType === 'work'" style="color: var(--text-sub);">
+            出勤餐补: <b>¥0.00</b> (暂无做工，默认休班不计入；做工后自动+¥{{ settings.mealSubsidyDaily || 6 }})
+          </span>
+          <!-- 场景3: 公休/年休/请假等休班 -->
           <span v-else style="color: var(--text-sub);">
-            今日为【{{ getAttendanceLabel(record.attendanceType) }}】，不上班不计餐费
+            今日为【{{ getAttendanceLabel(record.attendanceType) }}】，休班不计餐费
           </span>
         </div>
         <span style="color: var(--text-muted); font-size: 10px;">
-          {{ record.attendanceType === 'work' ? '标准可在设置调整' : '出勤全天自动+¥6' }}
+          {{ record.attendanceType === 'work' && hasWorkRecord ? '每日标准可在设置调整' : '不输入默认休班不计入' }}
         </span>
       </div>
 
@@ -537,9 +543,19 @@ const totalPieceCount = computed(() => {
   return (record.value.items || []).reduce((sum, it) => sum + (Number(it.count) || 0), 0);
 });
 
-// 出勤餐费补贴 (每天出勤全天自动+6元，不上班为0)
+// 判断今日是否有做工流水记录 (计件件数>0、或零工工时>0、或随班附加补贴>0)
+const hasWorkRecord = computed(() => {
+  const hasPieces = totalPieceCount.value > 0 || (record.value.items || []).length > 0;
+  const hasHourly = (Number(record.value.hourlyWork?.hours) || 0) > 0 || (Number(record.value.hourlyWork?.total) || 0) > 0;
+  const hasBonus = (Number(record.value.dailyBonus) || 0) > 0;
+  return hasPieces || hasHourly || hasBonus;
+});
+
+// 出勤餐费补贴:
+// 必须同时满足: ①处于出勤状态 (work) ②且当天已有做工流水 (hasWorkRecord)！
+// 若当天什么都不输入，默认等于休班未出工，餐补为0元，绝不乱计入！
 const dayMealSubsidy = computed(() => {
-  if (record.value.attendanceType === 'work') {
+  if (record.value.attendanceType === 'work' && hasWorkRecord.value) {
     return Number(settings.value?.mealSubsidyDaily !== undefined ? settings.value.mealSubsidyDaily : 6.0);
   }
   return 0;
