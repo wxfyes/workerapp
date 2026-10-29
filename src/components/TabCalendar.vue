@@ -12,7 +12,7 @@
           {{ currentYear }} 年 {{ currentMonth }} 月
         </div>
         <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
-          🇨🇳 内置中国法定休班与农历日历
+          核算账期: <span style="color: var(--accent-gold-light); font-weight: 700;">{{ monthSummary.cycleLabel || `${currentMonth}月` }}</span> ({{ monthSummary.salaryCycleStartDay > 1 ? `${monthSummary.salaryCycleStartDay}日结算` : '自然月' }})
         </div>
       </div>
 

@@ -36,9 +36,12 @@
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
           <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">
-            {{ selectedYearMonth }} 月 预估实发到手总额
+            {{ selectedYearMonth }} 预估实发到手总额
           </div>
-          <div style="display: flex; align-items: baseline; margin-top: 6px;">
+          <div style="font-size: 11px; color: var(--accent-gold-light); margin-top: 2px;">
+            核算周期: <b>{{ summary.cycleRange?.startDateStr }} ~ {{ summary.cycleRange?.endDateStr }}</b>
+          </div>
+          <div style="display: flex; align-items: baseline; margin-top: 4px;">
             <span style="font-size: 22px; font-weight: 700; color: var(--accent-gold); margin-right: 4px;">¥</span>
             <span style="font-size: 40px; font-weight: 900; color: #fff; letter-spacing: -0.5px; font-feature-settings: 'tnum';">
               {{ formatMoney(summary.finalSalary) }}
@@ -601,7 +604,8 @@ function copySummaryText() {
     ? `+¥${formatMoney(s.seniorityPay)}${configForm.value.seniorityMode === 'half_year' ? ' (半年一次集中发放)' : ''}` 
     : '¥0 (本月未发)';
 
-  const text = `【工友记工】${selectedYearMonth.value} 月工资核算对账
+  const cycleInfo = s.cycleRange ? ` (${s.cycleRange.startDateStr} ~ ${s.cycleRange.endDateStr})` : '';
+  const text = `【工友记工】${selectedYearMonth.value} 月工资核算对账${cycleInfo}
 ------------------------
 ★ 实发到手总额: ¥${formatMoney(s.finalSalary)} 元
 - 生产直接流水工钱: ¥${formatMoney(s.directWorkTotal || s.pieceTotal)} (做件: ${s.totalPieces}件, 出勤: ${s.workDays}天, 公休: ${s.publicRestDays}天, 年休: ${s.annualLeaveDays}天)

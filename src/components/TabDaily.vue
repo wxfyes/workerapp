@@ -156,87 +156,7 @@
       </div>
     </div>
 
-    <!-- 零工记录框 (用户重点要求：如1小时零工 15元) -->
-    <div class="card" style="padding: 12px 14px; margin-bottom: 14px; border: 1px solid rgba(52, 211, 153, 0.3);">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #34d399;">
-          <Clock :size="16" />
-          <span>今日零工记录框 (计时点工)</span>
-        </div>
-        <div v-if="(record.hourlyWork?.total || 0) > 0" class="badge badge-green" style="font-size: 11px;">
-          零工收入: +¥{{ formatMoney(record.hourlyWork.total) }}
-        </div>
-      </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
-        <!-- 零工工时 -->
-        <div>
-          <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">零工工时 (小时)</label>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <input 
-              type="number" 
-              step="0.5" 
-              min="0"
-              v-model.number="hourlyInput.hours" 
-              @change="updateHourlyWork"
-              placeholder="0"
-              class="form-input"
-              style="font-size: 18px; font-weight: 800; text-align: center; padding: 8px;"
-            />
-            <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">小时</span>
-          </div>
-          <!-- 快捷工时 -->
-          <div style="display: flex; gap: 4px; margin-top: 6px;">
-            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; padding: 2px 0; font-size: 11px;" @click="addHourlyHour(0.5)">+0.5</button>
-            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; padding: 2px 0; font-size: 11px;" @click="addHourlyHour(1)">+1时</button>
-            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; padding: 2px 0; font-size: 11px;" @click="addHourlyHour(2)">+2时</button>
-          </div>
-        </div>
-
-        <!-- 零工时薪 -->
-        <div>
-          <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">时薪 (元/小时)</label>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <span style="font-size: 13px; color: var(--accent-gold);">¥</span>
-            <input 
-              type="number" 
-              step="1" 
-              min="0"
-              v-model.number="hourlyInput.rate" 
-              @change="updateHourlyWork"
-              placeholder="15"
-              class="form-input"
-              style="font-size: 18px; font-weight: 800; text-align: center; padding: 8px; color: var(--accent-gold-light);"
-            />
-            <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">元/时</span>
-          </div>
-          <div style="font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 8px;">
-            默认15元/小时，可改
-          </div>
-        </div>
-      </div>
-
-      <!-- 零工备注 -->
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <input 
-          type="text" 
-          v-model="hourlyInput.note" 
-          @change="updateHourlyWork"
-          placeholder="零工事由 (如：车间打扫、临时搬货、清料)" 
-          class="form-input"
-          style="font-size: 12px; padding: 6px 10px;"
-        />
-        <button 
-          v-if="hourlyInput.hours > 0"
-          type="button" 
-          class="btn btn-secondary btn-sm" 
-          style="color: var(--text-sub); white-space: nowrap;"
-          @click="clearHourlyWork"
-        >
-          清空零工
-        </button>
-      </div>
-    </div>
 
     <!-- 当日干的多款清单 (支持一天干4~5款单双拼灵活添加) -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin: 18px 2px 10px 2px;">
@@ -343,6 +263,88 @@
       >
         <Plus :size="18" /> 继续添加下一款 (单拼 / 双拼)
       </button>
+    </div>
+
+    <!-- 零工记录框 (计时点工，位于单双拼列表下方) -->
+    <div class="card" style="padding: 12px 14px; margin-top: 14px; margin-bottom: 14px; border: 1px solid rgba(52, 211, 153, 0.3);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #34d399;">
+          <Clock :size="16" />
+          <span>今日零工记录框 (计时点工)</span>
+        </div>
+        <div v-if="(record.hourlyWork?.total || 0) > 0" class="badge badge-green" style="font-size: 11px;">
+          零工收入: +¥{{ formatMoney(record.hourlyWork.total) }}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+        <!-- 零工工时 -->
+        <div>
+          <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">零工工时 (小时)</label>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input 
+              type="number" 
+              step="0.5" 
+              min="0"
+              v-model.number="hourlyInput.hours" 
+              @change="updateHourlyWork"
+              placeholder="0"
+              class="form-input"
+              style="font-size: 18px; font-weight: 800; text-align: center; padding: 8px;"
+            />
+            <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">小时</span>
+          </div>
+          <!-- 快捷工时 -->
+          <div style="display: flex; gap: 4px; margin-top: 6px;">
+            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; padding: 2px 0; font-size: 11px;" @click="addHourlyHour(0.5)">+0.5</button>
+            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; padding: 2px 0; font-size: 11px;" @click="addHourlyHour(1)">+1时</button>
+            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; padding: 2px 0; font-size: 11px;" @click="addHourlyHour(2)">+2时</button>
+          </div>
+        </div>
+
+        <!-- 零工时薪 -->
+        <div>
+          <label class="form-label" style="font-size: 12px; margin-bottom: 4px;">时薪 (元/小时)</label>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="font-size: 13px; color: var(--accent-gold);">¥</span>
+            <input 
+              type="number" 
+              step="1" 
+              min="0"
+              v-model.number="hourlyInput.rate" 
+              @change="updateHourlyWork"
+              placeholder="15"
+              class="form-input"
+              style="font-size: 18px; font-weight: 800; text-align: center; padding: 8px; color: var(--accent-gold-light);"
+            />
+            <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">元/时</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 8px;">
+            默认15元/小时，可改
+          </div>
+        </div>
+      </div>
+
+      <!-- 零工备注 -->
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input 
+          type="text" 
+          v-model="hourlyInput.note" 
+          @change="updateHourlyWork"
+          placeholder="零工事由 (如：车间打扫、临时搬货、清料)" 
+          class="form-input"
+          style="font-size: 12px; padding: 6px 10px;"
+        />
+        <button 
+          v-if="hourlyInput.hours > 0"
+          type="button" 
+          class="btn btn-secondary btn-sm" 
+          style="color: var(--text-sub); white-space: nowrap;"
+          @click="clearHourlyWork"
+        >
+          清空零工
+        </button>
+      </div>
     </div>
 
     <!-- 当日附加随班补贴与记事折叠区 -->

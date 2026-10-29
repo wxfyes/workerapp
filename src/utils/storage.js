@@ -45,7 +45,7 @@ export function formatMoney(val) {
   return num.toFixed(2);
 }
 
-// 读取全局设置（单双拼默认价格、调机费、零工时薪、餐费补贴、工龄双模式）
+// 读取全局设置（单双拼默认价格、调机费、零工时薪、餐费补贴、工龄双模式、月结算日）
 export function getAppSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -57,6 +57,9 @@ export function getAppSettings() {
       defaultHourlyRate: 15.0,        // 零工时薪 (元/小时)
       mealSubsidyDaily: 6.0,          // 每日固定餐费补贴 (元/出勤天，全天出勤自动计入)
       
+      // 月度工资结算周期起始日 (默认16号，即当月16号至次月15号为一个结算月；设为1则为自然月)
+      salaryCycleStartDay: 16,
+
       // 工龄规则
       seniorityMode: 'monthly',       // 'monthly' 或 'half_year'
       defaultSeniorityPay: 200,       // 按月发金额 (元/月)
@@ -73,12 +76,74 @@ export function getAppSettings() {
       defaultSetupFee: 5.0,
       defaultHourlyRate: 15.0,
       mealSubsidyDaily: 6.0,
+      salaryCycleStartDay: 16,
       seniorityMode: 'monthly',
       defaultSeniorityPay: 200,
       halfYearSeniorityAmount: 1200,
       workerName: '',
       workshop: ''
     };
+  }
+}
+
+/**
+ * 计算账单周期的日期起止范围 (例如 2026-10，若 16 号结算，则范围为 2026-10-16 至 2026-11-15)
+ */
+export function getMonthDateRange(yearMonth, cycleStartDay = 16) {
+  const [y, m] = (yearMonth || '').split('-').map(Number);
+  const startDay = Math.max(1, Math.min(28, Number(cycleStartDay) || 16));
+
+  if (startDay === 1) {
+    // 自然月模式 (1日 ~ 当月最后一天)
+    const startDateStr = `${y}-${String(m).padStart(2, '0')}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const endDateStr = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return {
+      startDateStr,
+      endDateStr,
+      label: `${String(m).padStart(2, '0')}/01 ~ ${String(m).padStart(2, '0')}/${String(lastDay).padStart(2, '0')}`,
+      startDay: 1,
+      isNaturalMonth: true
+    };
+  }
+
+  // 跨月结算模式 (例如当月 16 日 至 次月 15 日)
+  const startDateStr = `${y}-${String(m).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
+  const nextYear = m === 12 ? y + 1 : y;
+  const nextMonth = m === 12 ? 1 : m + 1;
+  const endDay = startDay - 1;
+  const endDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
+  const label = `${String(m).padStart(2, '0')}/${String(startDay).padStart(2, '0')} ~ ${String(nextMonth).padStart(2, '0')}/${String(endDay).padStart(2, '0')}`;
+
+  return {
+    startDateStr,
+    endDateStr,
+    label,
+    startDay,
+    isNaturalMonth: false
+  };
+}
+
+/**
+ * 根据具体的某一天获取其归属的薪资核算月份
+ * 例如 2026-10-29，16日结算，29 >= 16，归属 2026-10 账单月(10/16~11/15)
+ * 若为 2026-10-10，10 < 16，则归属 2026-09 账单月(09/16~10/15)
+ */
+export function getBillMonthForDate(dateStr, cycleStartDay = 16) {
+  if (!dateStr) return formatMonth(new Date());
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const startDay = Math.max(1, Math.min(28, Number(cycleStartDay) || 16));
+
+  if (startDay === 1) {
+    return `${y}-${String(m).padStart(2, '0')}`;
+  }
+
+  if (d >= startDay) {
+    return `${y}-${String(m).padStart(2, '0')}`;
+  } else {
+    const prevYear = m === 1 ? y - 1 : y;
+    const prevMonth = m === 1 ? 12 : m - 1;
+    return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
   }
 }
 
@@ -275,7 +340,10 @@ export function saveMonthConfig(yearMonth, config) {
 // 【月度核算总引擎】
 export function calculateMonthSummary(yearMonth) {
   const allDays = getAllDays();
+  const settings = getAppSettings();
   const config = getMonthConfig(yearMonth);
+  const cycleStartDay = settings.salaryCycleStartDay !== undefined ? settings.salaryCycleStartDay : 16;
+  const cycleRange = getMonthDateRange(yearMonth, cycleStartDay);
 
   let pieceTotal = 0;       // 计件纯金额 (不含调机费)
   let setupFeeTotal = 0;    // 调机费总金额
@@ -301,7 +369,8 @@ export function calculateMonthSummary(yearMonth) {
   const dayRecords = [];
 
   Object.keys(allDays).forEach(dateStr => {
-    if (dateStr.startsWith(yearMonth)) {
+    // 按照配置的结算周期起止范围准确统计 (默认当月16日至次月15日)
+    if (dateStr >= cycleRange.startDateStr && dateStr <= cycleRange.endDateStr) {
       const rec = allDays[dateStr];
       const attType = rec.attendanceType || 'work';
 
@@ -443,6 +512,9 @@ export function calculateMonthSummary(yearMonth) {
     totalDeductions,
     finalSalary,
     dayRecords,
+    cycleRange,
+    cycleLabel: cycleRange.label,
+    salaryCycleStartDay: cycleStartDay,
     config
   };
 }
@@ -605,7 +677,7 @@ export function seedDemoData() {
 }
 
 // 软件版本号与在线更新配置
-export const CURRENT_APP_VERSION = 'v1.0.2';
+export const CURRENT_APP_VERSION = 'v1.0.3';
 export const GITHUB_REPO = 'wxfyes/workerapp';
 
 function compareVersions(v1, v2) {

@@ -126,7 +126,8 @@ import TabCalendar from './components/TabCalendar.vue';
 import TabMonthly from './components/TabMonthly.vue';
 import TabSettings from './components/TabSettings.vue';
 import { 
-  formatDate, formatMonth, formatMoney, calculateMonthSummary 
+  formatDate, formatMonth, formatMoney, calculateMonthSummary, 
+  getBillMonthForDate, getAppSettings 
 } from './utils/storage';
 
 const activeTab = ref('daily');
@@ -146,6 +147,7 @@ onMounted(() => {
 
 function switchTab(tab) {
   activeTab.value = tab;
+  refreshGlobalSummary();
   if (tab === 'calendar' && calendarRef.value) {
     calendarRef.value.refreshData();
   } else if (tab === 'monthly' && monthlyRef.value) {
@@ -159,9 +161,17 @@ function handleDateChanged(newDate) {
 }
 
 function refreshGlobalSummary() {
-  const ym = formatMonth(new Date());
-  const summary = calculateMonthSummary(ym);
-  currentMonthSalary.value = summary.finalSalary;
+  try {
+    const settings = getAppSettings();
+    const cycleStart = settings.salaryCycleStartDay !== undefined ? settings.salaryCycleStartDay : 16;
+    const targetDate = activeDate.value || formatDate(new Date());
+    const billMonth = getBillMonthForDate(targetDate, cycleStart);
+    const summary = calculateMonthSummary(billMonth);
+    currentMonthSalary.value = Number(summary?.finalSalary) || 0;
+  } catch (err) {
+    console.error('refreshGlobalSummary error', err);
+    currentMonthSalary.value = 0;
+  }
 }
 
 function handleGlobalDataReload() {

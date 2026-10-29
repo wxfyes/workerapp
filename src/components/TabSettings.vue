@@ -120,7 +120,71 @@
       </div>
     </div>
 
-    <!-- 2. 工龄补贴发放模式 -->
+    <!-- 2. 月度工资结算周期起止日设置 (用户重点要求：当月16日至次月15日等结算日可自定义) -->
+    <div class="card">
+      <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <CalendarDays :size="18" style="color: var(--accent-gold);" />
+          <span>月度工资结算日设置</span>
+        </div>
+        <span class="badge badge-gold" style="font-size: 11px;">
+          {{ settings.salaryCycleStartDay === 1 ? '自然月结算' : `每月${settings.salaryCycleStartDay}日结算` }}
+        </span>
+      </div>
+
+      <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
+        <label class="form-label" style="font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+          每月结算起始日 (号)
+        </label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input 
+            v-model.number="settings.salaryCycleStartDay" 
+            type="number" 
+            min="1" 
+            max="28"
+            class="form-input" 
+            placeholder="16"
+            style="width: 80px; font-size: 18px; font-weight: 800; text-align: center; color: var(--accent-gold-light); padding: 6px;"
+            @change="saveCurrentSettings"
+          />
+          <span style="font-size: 13px; color: var(--text-muted);">号</span>
+
+          <!-- 快捷预设按钮 -->
+          <div style="display: flex; gap: 6px; margin-left: auto;">
+            <button 
+              type="button" 
+              class="btn btn-sm"
+              :class="settings.salaryCycleStartDay === 16 ? 'btn-primary' : 'btn-secondary'"
+              style="font-size: 11px; padding: 4px 8px;"
+              @click="setCycleStartDay(16)"
+            >
+              16号(16~次月15)
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm"
+              :class="settings.salaryCycleStartDay === 1 ? 'btn-primary' : 'btn-secondary'"
+              style="font-size: 11px; padding: 4px 8px;"
+              @click="setCycleStartDay(1)"
+            >
+              1号(自然月)
+            </button>
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-sub); margin-top: 8px; line-height: 1.5;">
+          <span style="color: var(--accent-gold-light); font-weight: 600;">当前计算规则：</span>
+          <span v-if="settings.salaryCycleStartDay > 1">
+            以当月 <b>{{ settings.salaryCycleStartDay }}</b> 日至次月 <b>{{ settings.salaryCycleStartDay - 1 }}</b> 日作为一个月度核算周期（如10月薪资周期为 10月{{ settings.salaryCycleStartDay }}日 ~ 11月{{ settings.salaryCycleStartDay - 1 }}日）。
+          </span>
+          <span v-else>
+            以自然月（当月1日 至 当月最后一天）作为一个月度核算周期。
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 工龄补贴发放模式 -->
     <div class="card">
       <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
         <Sliders :size="18" style="color: var(--accent-gold);" />
@@ -416,7 +480,7 @@ import { ref, onMounted } from 'vue';
 import { 
   User, Sliders, ShieldCheck, Download, Upload, 
   Wrench, Sparkles, Trash, Coins, Share2, Copy, 
-  ClipboardPaste, RefreshCw 
+  ClipboardPaste, RefreshCw, CalendarDays 
 } from 'lucide-vue-next';
 import { 
   getAppSettings, saveAppSettings, exportAllDataJSON, 
@@ -432,6 +496,7 @@ const settings = ref({
   defaultSetupFee: 5.0,
   defaultHourlyRate: 15.0,
   mealSubsidyDaily: 6.0,
+  salaryCycleStartDay: 16,
   seniorityMode: 'monthly',
   defaultSeniorityPay: 200,
   halfYearSeniorityAmount: 1200,
@@ -449,6 +514,12 @@ const pasteCodeInput = ref('');
 onMounted(() => {
   settings.value = getAppSettings();
 });
+
+function setCycleStartDay(day) {
+  settings.value.salaryCycleStartDay = day;
+  saveCurrentSettings();
+  emit('toast', `月度结算日已切换为【每月 ${day} 号】`);
+}
 
 function saveCurrentSettings() {
   saveAppSettings(settings.value);

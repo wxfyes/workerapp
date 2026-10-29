@@ -18,7 +18,7 @@ export function exportMonthToExcel(yearMonth) {
   // 1. 汇总表
   const summaryData = [
     ['【工友记工】月度工资对账汇总表'],
-    ['核算月份：', yearMonth, '记录人：', settings.workerName || '本人', '所属车间/班组：', settings.workshop || '-'],
+    ['核算月份：', `${yearMonth} (${summary.cycleRange?.startDateStr || ''} 至 ${summary.cycleRange?.endDateStr || ''})`, '记录人：', settings.workerName || '本人', '所属车间/班组：', settings.workshop || '-'],
     ['生成日期：', new Date().toLocaleDateString('zh-CN'), '', '', '', ''],
     [],
     ['=== 考勤天数概况 ===', '', '', '', '', ''],
