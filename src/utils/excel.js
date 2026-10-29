@@ -66,8 +66,9 @@ export function exportMonthToExcel(yearMonth) {
   summaryData.push(['各项扣款合计', Number(formatMoney(summary.totalDeductions)), '元', '当月扣减总计']);
   summaryData.push([]);
 
-  // 最终核算大字
-  summaryData.push(['★ 本月实发应得总额 ★', Number(formatMoney(summary.finalSalary)), '元 (RMB)', '直接工钱 + 补贴福利 - 扣款']);
+  // 扣款前实际工资与最终实发大字
+  summaryData.push(['★ 扣款前实际工资 (应发总额) ★', Number(formatMoney(summary.grossSalary !== undefined ? summary.grossSalary : ((summary.directWorkTotal || summary.pieceTotal) + summary.totalSubsidies))), '元 (RMB)', '直接工钱 + 补贴福利加项']);
+  summaryData.push(['★ 本月实发到手总额 ★', Number(formatMoney(summary.finalSalary)), '元 (RMB)', '扣前实际工资 - 各项代扣除款']);
 
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
   wsSummary['!cols'] = [

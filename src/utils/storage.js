@@ -473,11 +473,15 @@ export function calculateMonthSummary(yearMonth) {
     totalDeductions += Number(d.amount) || 0;
   });
 
-  // 最终实发应得总收入
-  const finalSalary = directWorkTotal + totalSubsidies - totalDeductions;
+  // 应发工资总额 (没扣款之前的实际应得总工资 = 生产流水直接工钱 + 补贴福利加项)
+  const grossSalary = directWorkTotal + totalSubsidies;
+
+  // 最终实发应得总收入 (实发到手 = 扣前实际工资 - 代扣除项)
+  const finalSalary = grossSalary - totalDeductions;
 
   return {
     yearMonth,
+    grossSalary,
     workDays,
     publicRestDays,
     annualLeaveDays,
@@ -680,7 +684,7 @@ export function seedDemoData() {
 }
 
 // 软件版本号与在线更新配置
-export const CURRENT_APP_VERSION = 'v1.0.4';
+export const CURRENT_APP_VERSION = 'v1.0.5';
 export const GITHUB_REPO = 'wxfyes/workerapp';
 
 function compareVersions(v1, v2) {

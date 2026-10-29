@@ -55,16 +55,23 @@
         </button>
       </div>
 
-      <!-- 核心收支公式透视 -->
-      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <div>
-          计件/流水工钱: <b style="color: var(--text-main);">¥{{ formatMoney(summary.pieceTotal) }}</b>
+      <!-- 核心收支公式透视 (2x2工整对称网格，包含扣款前实际工资) -->
+      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>计件/做工流水:</span>
+          <b style="color: var(--text-main);">¥{{ formatMoney(summary.directWorkTotal !== undefined ? summary.directWorkTotal : summary.pieceTotal) }}</b>
         </div>
-        <div>
-          + 补贴福利: <b style="color: var(--accent-gold-light);">¥{{ formatMoney(summary.totalSubsidies) }}</b>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>+ 补贴福利:</span>
+          <b style="color: var(--accent-gold-light);">¥{{ formatMoney(summary.totalSubsidies) }}</b>
         </div>
-        <div>
-          - 代扣除项: <b style="color: var(--accent-red);">¥{{ formatMoney(summary.totalDeductions) }}</b>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>- 代扣除项:</span>
+          <b style="color: var(--accent-red);">¥{{ formatMoney(summary.totalDeductions) }}</b>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); padding: 2px 6px; border-radius: 4px; border: 1px dashed rgba(56, 189, 248, 0.35);">
+          <span style="color: #38bdf8; font-weight: 600;">扣前实际工资:</span>
+          <b style="color: #38bdf8; font-weight: 800;">¥{{ formatMoney(summary.grossSalary !== undefined ? summary.grossSalary : ((summary.directWorkTotal || summary.pieceTotal) + summary.totalSubsidies)) }}</b>
         </div>
       </div>
     </div>
@@ -463,6 +470,7 @@ const summary = ref({
   baseSalary: 0,
   totalSubsidies: 0,
   totalDeductions: 0,
+  grossSalary: 0,
   finalSalary: 0,
   config: { allowances: [], deductions: [] }
 });
@@ -608,13 +616,10 @@ function copySummaryText() {
   const text = `【工友记工】${selectedYearMonth.value} 月工资核算对账${cycleInfo}
 ------------------------
 ★ 实发到手总额: ¥${formatMoney(s.finalSalary)} 元
-- 生产直接流水工钱: ¥${formatMoney(s.directWorkTotal || s.pieceTotal)} (做件: ${s.totalPieces}件, 出勤: ${s.workDays}天, 公休: ${s.publicRestDays}天, 年休: ${s.annualLeaveDays}天)
-- 出勤固定餐补: +¥${formatMoney(s.mealSubsidyTotal || 0)} (出勤${s.workDays}天 × ¥${s.mealSubsidyDaily || 6}元)
-- 工龄补贴: ${seniorityText}
-- 高温补贴: +¥${formatMoney(s.highTempPay)}${s.highTempPay > 0 ? '' : ' (本月无)'}
-- 全勤奖金: +¥${formatMoney(s.attendanceBonus)}
-- 其他补贴: +¥${formatMoney(s.dailyBonusTotal + s.customAllowancesTotal)}
-- 代扣除项: -¥${formatMoney(s.totalDeductions)}
+★ 扣前实际工资 (应发总额): ¥${formatMoney(s.grossSalary !== undefined ? s.grossSalary : ((s.directWorkTotal || s.pieceTotal) + s.totalSubsidies))} 元
+- 生产做工流水: ¥${formatMoney(s.directWorkTotal || s.pieceTotal)} (做件: ${s.totalPieces}件, 出勤: ${s.workDays}天, 公休: ${s.publicRestDays}天, 年休: ${s.annualLeaveDays}天)
+- 补贴福利合计: +¥${formatMoney(s.totalSubsidies)} (含出勤餐补¥${formatMoney(s.mealSubsidyTotal || 0)}、工龄、奖金等)
+- 各项代扣除款: -¥${formatMoney(s.totalDeductions)}
 ------------------------
 记录于 工友记工App`;
 
