@@ -4,10 +4,11 @@
 
 ---
 
-## 一、 已生成的安卓安装包 (APK)
+## 一、 安卓安装包下载 (APK Download)
 
-在项目根目录下已为您直接编译好安装包：
-👉 **[`工友记工_v1.0.apk`](file:///e:/GitHub/workerapp/工友记工_v1.0.apk)** (体积仅 4.08 MB)
+* 🌐 **GitHub Releases 发布页面**：[https://github.com/wxfyes/workerapp/releases/tag/v1.0.0](https://github.com/wxfyes/workerapp/releases/tag/v1.0.0)
+* 🚀 **手机直接下载直链**：[**WorkerApp_v1.0.0.apk (点击直接下载)**](https://github.com/wxfyes/workerapp/releases/download/v1.0.0/WorkerApp_v1.0.0.apk)
+* 💻 **本地 APK 文件**：[`工友记工_v1.0.apk`](file:///e:/GitHub/workerapp/工友记工_v1.0.apk) (体积约 4.56 MB)
 
 ### 手机安装方法：
 1. 直接将该 `.apk` 文件通过微信/QQ发送到手机；
