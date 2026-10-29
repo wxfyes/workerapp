@@ -91,7 +91,7 @@
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
           <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">
-            今日预估总收入 (计件+调机+零工)
+            今日预估总收入 (计件+调机+零工+餐补)
           </div>
           <div style="display: flex; align-items: baseline; margin-top: 6px;">
             <span style="font-size: 20px; font-weight: 700; color: var(--accent-gold); margin-right: 4px;">¥</span>
@@ -111,8 +111,24 @@
         </button>
       </div>
 
+      <!-- 出勤餐费补贴状态条 (全天出勤自动计入6元，不上班不计) -->
+      <div style="margin-top: 10px; padding: 6px 10px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span>🍱</span>
+          <span v-if="record.attendanceType === 'work'" style="color: var(--accent-gold-light); font-weight: 600;">
+            出勤餐补: <b>+¥{{ formatMoney(dayMealSubsidy) }}</b> (出勤全天自动计入)
+          </span>
+          <span v-else style="color: var(--text-sub);">
+            今日为【{{ getAttendanceLabel(record.attendanceType) }}】，不上班不计餐费
+          </span>
+        </div>
+        <span style="color: var(--text-muted); font-size: 10px;">
+          {{ record.attendanceType === 'work' ? '标准可在设置调整' : '出勤全天自动+¥6' }}
+        </span>
+      </div>
+
       <!-- 当日核心指标拆解 -->
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center;">
         <div>
           <div style="font-size: 10px; color: var(--text-muted);">计件纯工钱</div>
           <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-top: 2px;">
@@ -519,11 +535,19 @@ const totalPieceCount = computed(() => {
   return (record.value.items || []).reduce((sum, it) => sum + (Number(it.count) || 0), 0);
 });
 
-// 当日预估总收入 = 计件工钱 + 调机费 + 零工工钱 + 附加补贴
+// 出勤餐费补贴 (每天出勤全天自动+6元，不上班为0)
+const dayMealSubsidy = computed(() => {
+  if (record.value.attendanceType === 'work') {
+    return Number(settings.value?.mealSubsidyDaily !== undefined ? settings.value.mealSubsidyDaily : 6.0);
+  }
+  return 0;
+});
+
+// 当日预估总收入 = 计件工钱 + 调机费 + 零工工钱 + 出勤餐补 + 附加补贴
 const dayTotalMoney = computed(() => {
   const hTotal = Number(record.value.hourlyWork?.total) || 0;
   const bonus = Number(record.value.dailyBonus) || 0;
-  return dayPieceMoney.value + daySetupFeeTotal.value + hTotal + bonus;
+  return dayPieceMoney.value + daySetupFeeTotal.value + hTotal + dayMealSubsidy.value + bonus;
 });
 
 const isToday = computed(() => {

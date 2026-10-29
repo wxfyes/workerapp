@@ -45,16 +45,17 @@ export function formatMoney(val) {
   return num.toFixed(2);
 }
 
-// 读取全局设置（单双拼默认价格、调机费、零工时薪、工龄双模式）
+// 读取全局设置（单双拼默认价格、调机费、零工时薪、餐费补贴、工龄双模式）
 export function getAppSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     const defaults = {
-      // 核心单价设置 (用户要求：单拼 0.0075，双拼 0.015，调机费 5，零工 15)
+      // 核心单价设置 (用户要求：单拼 0.0075，双拼 0.015，调机费 5，零工 15，餐补 6)
       singlePiecePrice: 0.0075,       // 单拼单价 (元/件)
       doublePiecePrice: 0.015,        // 双拼单价 (元/件)
       defaultSetupFee: 5.0,           // 调机费 (元/次)
       defaultHourlyRate: 15.0,        // 零工时薪 (元/小时)
+      mealSubsidyDaily: 6.0,          // 每日固定餐费补贴 (元/出勤天，全天出勤自动计入)
       
       // 工龄规则
       seniorityMode: 'monthly',       // 'monthly' 或 'half_year'
@@ -71,6 +72,7 @@ export function getAppSettings() {
       doublePiecePrice: 0.015,
       defaultSetupFee: 5.0,
       defaultHourlyRate: 15.0,
+      mealSubsidyDaily: 6.0,
       seniorityMode: 'monthly',
       defaultSeniorityPay: 200,
       halfYearSeniorityAmount: 1200,
@@ -288,6 +290,8 @@ export function calculateMonthSummary(yearMonth) {
 
   let totalPieces = 0;      // 生产总件数 (单拼+双拼)
   let dailyBonusTotal = 0;  // 当月各日零星补贴总额
+  const mealSubsidyDaily = Number(settings.mealSubsidyDaily !== undefined ? settings.mealSubsidyDaily : 6.0);
+  let mealSubsidyTotal = 0; // 当月出勤餐费补贴总额 (每天出勤自动+6元)
 
   let workDays = 0;
   let publicRestDays = 0;
@@ -334,20 +338,22 @@ export function calculateMonthSummary(yearMonth) {
       hourlyWorkTotal += dayHourlyTotal;
       hourlyHoursTotal += dayHourlyHours;
 
-      // 当日总金额 = 计件工钱 + 调机费 + 零工工钱 + 当日补贴
-      const dayTotalMoney = dayPieceMoney + daySetupFee + dayHourlyTotal + (Number(rec.dailyBonus) || 0);
-
-      if (attType === 'public_rest') {
+      // 餐费补贴：出勤全天自动计入，不上班（公休、事假、病假等）自动为 0
+      let dayMealSubsidy = 0;
+      if (attType === 'work') {
+        workDays += 1;
+        dayMealSubsidy = mealSubsidyDaily;
+        mealSubsidyTotal += dayMealSubsidy;
+      } else if (attType === 'public_rest') {
         publicRestDays += 1;
       } else if (attType === 'annual_leave') {
         annualLeaveDays += 1;
-      } else if (attType === 'work') {
-        if (dayTotalMoney > 0 || (rec.items && rec.items.length > 0)) {
-          workDays += 1;
-        }
       } else {
         otherLeaveDays += 1;
       }
+
+      // 当日总金额 = 计件工钱 + 调机费 + 零工工钱 + 餐费补贴 + 当日附加补贴
+      const dayTotalMoney = dayPieceMoney + daySetupFee + dayHourlyTotal + dayMealSubsidy + (Number(rec.dailyBonus) || 0);
 
       pieceTotal += dayPieceMoney;
       setupFeeTotal += daySetupFee;
@@ -363,6 +369,7 @@ export function calculateMonthSummary(yearMonth) {
         dayHourlyTotal,
         dayHourlyHours,
         dayPieceCount,
+        dayMealSubsidy,
         dayTotalMoney
       });
     }
@@ -385,7 +392,8 @@ export function calculateMonthSummary(yearMonth) {
   const attendanceBonus = Number(config.attendanceBonus) || 0;
   const baseSalary = Number(config.baseSalary) || 0;
 
-  const totalSubsidies = dailyBonusTotal + seniorityPay + highTempPay + attendanceBonus + baseSalary + customAllowancesTotal;
+  // 补贴总额 = 零星补贴 + 出勤餐费补贴 + 工龄 + 高温 + 全勤 + 底薪 + 其他自定义补贴
+  const totalSubsidies = dailyBonusTotal + mealSubsidyTotal + seniorityPay + highTempPay + attendanceBonus + baseSalary + customAllowancesTotal;
 
   // 月度扣款项计算
   let totalDeductions = 0;
@@ -417,6 +425,10 @@ export function calculateMonthSummary(yearMonth) {
     // 零工
     hourlyHoursTotal,
     hourlyWorkTotal,
+
+    // 餐费补贴 (出勤自动算)
+    mealSubsidyDaily,
+    mealSubsidyTotal,
 
     pieceTotal,              // 纯计件总金额
     directWorkTotal,         // 生产直接报酬 (计件+调机+零工)
@@ -593,7 +605,7 @@ export function seedDemoData() {
 }
 
 // 软件版本号与在线更新配置
-export const CURRENT_APP_VERSION = 'v1.0.1';
+export const CURRENT_APP_VERSION = 'v1.0.2';
 export const GITHUB_REPO = 'wxfyes/workerapp';
 
 function compareVersions(v1, v2) {

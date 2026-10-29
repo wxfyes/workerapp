@@ -37,6 +37,7 @@ export function exportMonthToExcel(yearMonth) {
     ['生产直接报酬合计', `${summary.totalPieces} 件计件`, Number(formatMoney(summary.directWorkTotal || summary.pieceTotal)), '计件 + 调机 + 零工'],
     [],
     ['=== 补贴与福利加项 ===', '', '', '', '', ''],
+    ['出勤餐费补贴', Number(formatMoney(summary.mealSubsidyTotal)), '元', `出勤 ${summary.workDays} 天，每天 ${summary.mealSubsidyDaily || 6} 元 (全天出勤自动计入)`],
     ['日附加补贴小计', Number(formatMoney(summary.dailyBonusTotal)), '元', '每日年休带薪/加点零星补贴'],
     ['工龄补贴', Number(formatMoney(summary.seniorityPay)), '元', seniorityNote],
     ['高温补贴', Number(formatMoney(summary.highTempPay)), '元', summary.highTempPay > 0 ? '当月发放高温补贴' : '本月无高温补贴(一年一次)'],
@@ -92,6 +93,7 @@ export function exportMonthToExcel(yearMonth) {
     '本款合计(元)',
     '今日零工(元)',
     '零工说明',
+    '出勤餐补(元)',
     '今日总收入(元)',
     '备注'
   ];
@@ -103,6 +105,7 @@ export function exportMonthToExcel(yearMonth) {
     const hw = day.hourlyWork || {};
     const hwText = hw.hours > 0 ? `${hw.hours}时×¥${hw.rate}=¥${hw.total}` : '-';
     const hwNote = hw.note || '';
+    const mealText = day.dayMealSubsidy > 0 ? Number(formatMoney(day.dayMealSubsidy)) : 0;
 
     if (!day.items || day.items.length === 0) {
       detailRows.push([
@@ -118,6 +121,7 @@ export function exportMonthToExcel(yearMonth) {
         0,
         hw.total || 0,
         hwText,
+        mealText,
         day.dayTotalMoney || 0,
         day.notes || ''
       ]);
@@ -128,6 +132,7 @@ export function exportMonthToExcel(yearMonth) {
       const isFirst = idx === 0;
       const hwCol = isFirst ? (hw.total || 0) : '';
       const hwNoteCol = isFirst ? hwText : '';
+      const mealCol = isFirst ? mealText : '';
       const dayTotalCol = isFirst ? day.dayTotalMoney : '';
       const dayNotesCol = isFirst ? (day.notes || '') : '';
 
@@ -144,6 +149,7 @@ export function exportMonthToExcel(yearMonth) {
         it.total,
         hwCol,
         hwNoteCol,
+        mealCol,
         dayTotalCol,
         it.remark || dayNotesCol
       ]);

@@ -165,6 +165,24 @@
         </span>
       </div>
 
+      <!-- 0. 出勤固定餐费补贴 (出勤自动算，不上班不计) -->
+      <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--text-main);">🍱 出勤餐费补贴</span>
+              <span class="badge badge-gold" style="font-size: 10px;">出勤全天自动计入</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-sub); margin-top: 3px;">
+              出勤 {{ summary.workDays }} 天 × ¥{{ summary.mealSubsidyDaily || 6 }} 元/天 (不上班不计)
+            </div>
+          </div>
+          <div style="font-size: 17px; font-weight: 800; color: var(--accent-gold-light);">
+            +¥{{ formatMoney(summary.mealSubsidyTotal || 0) }}
+          </div>
+        </div>
+      </div>
+
       <!-- 1. 工龄补贴 (支持：按月发放 VS 半年一次不固定月份) -->
       <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -586,7 +604,8 @@ function copySummaryText() {
   const text = `【工友记工】${selectedYearMonth.value} 月工资核算对账
 ------------------------
 ★ 实发到手总额: ¥${formatMoney(s.finalSalary)} 元
-- 计件/流水工钱: ¥${formatMoney(s.pieceTotal)} (做件: ${s.totalPieces}件, 出勤: ${s.workDays}天, 公休: ${s.publicRestDays}天, 年休: ${s.annualLeaveDays}天)
+- 生产直接流水工钱: ¥${formatMoney(s.directWorkTotal || s.pieceTotal)} (做件: ${s.totalPieces}件, 出勤: ${s.workDays}天, 公休: ${s.publicRestDays}天, 年休: ${s.annualLeaveDays}天)
+- 出勤固定餐补: +¥${formatMoney(s.mealSubsidyTotal || 0)} (出勤${s.workDays}天 × ¥${s.mealSubsidyDaily || 6}元)
 - 工龄补贴: ${seniorityText}
 - 高温补贴: +¥${formatMoney(s.highTempPay)}${s.highTempPay > 0 ? '' : ' (本月无)'}
 - 全勤奖金: +¥${formatMoney(s.attendanceBonus)}

@@ -207,6 +207,9 @@
             <span v-if="selectedDayRecord.dayHourlyTotal > 0" style="color: #34d399; background: rgba(52, 211, 153, 0.12); padding: 2px 6px; border-radius: 4px; font-weight: 600;">
               零工: +¥{{ formatMoney(selectedDayRecord.dayHourlyTotal) }} ({{ selectedDayRecord.hourlyWork?.hours }}时)
             </span>
+            <span v-if="selectedDayRecord.dayMealSubsidy > 0" style="color: #fbbf24; background: rgba(251, 191, 36, 0.12); padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+              餐补: +¥{{ formatMoney(selectedDayRecord.dayMealSubsidy) }}
+            </span>
             <span v-if="selectedDayRecord.dailyBonus > 0" style="color: var(--accent-gold); background: rgba(245, 158, 11, 0.12); padding: 2px 6px; border-radius: 4px;">
               补贴: +¥{{ selectedDayRecord.dailyBonus }}
             </span>
@@ -309,7 +312,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { ChevronLeft, ChevronRight, CalendarDays, Layers, Clock } from 'lucide-vue-next';
 import { 
   formatDate, formatMoney, getAllDays, calculateMonthSummary, 
-  ATTENDANCE_CONFIG 
+  ATTENDANCE_CONFIG, getAppSettings 
 } from '../utils/storage';
 import { getChinaCalendarInfo } from '../utils/lunar';
 
@@ -326,6 +329,7 @@ const currentYear = ref(new Date().getFullYear());
 const currentMonth = ref(new Date().getMonth() + 1);
 const selectedDateStr = ref(props.currentDate);
 
+const appSettings = ref(getAppSettings());
 const allDaysData = ref({});
 const monthSummary = ref({ 
   workDays: 0, 
@@ -351,6 +355,7 @@ watch(() => props.currentDate, (val) => {
 });
 
 function refreshData() {
+  appSettings.value = getAppSettings();
   allDaysData.value = getAllDays();
   const ym = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}`;
   monthSummary.value = calculateMonthSummary(ym);
@@ -427,7 +432,10 @@ const calendarCells = computed(() => {
       const hwTotal = Number(dayRecord.hourlyWork?.total) || 0;
       // 附加补贴
       const bonus = Number(dayRecord.dailyBonus) || 0;
-      totalMoney = itemsTotal + hwTotal + bonus;
+      // 餐费补贴: 出勤全天自动计入6元，不上班为0
+      const mealRate = Number(appSettings.value?.mealSubsidyDaily !== undefined ? appSettings.value.mealSubsidyDaily : 6.0);
+      const mealSubsidy = attendanceType === 'work' ? mealRate : 0;
+      totalMoney = itemsTotal + hwTotal + mealSubsidy + bonus;
     }
 
     const holidayInfo = getChinaCalendarInfo(y, m, d);
@@ -468,7 +476,7 @@ const calendarCells = computed(() => {
   return cells;
 });
 
-// 当前选中日期的详细信息 (彻底补齐零工与调机费透视)
+// 当前选中日期的详细信息 (彻底补齐零工、调机费与餐费补贴透视)
 const selectedDayRecord = computed(() => {
   const dStr = selectedDateStr.value;
   const dayRecord = allDaysData.value[dStr] || { 
@@ -492,8 +500,12 @@ const selectedDayRecord = computed(() => {
   // 零工总金额
   const dayHourlyTotal = Number(dayRecord.hourlyWork?.total) || 0;
 
-  // 当日总金额 = 计件工钱 + 调机费 + 零工工钱 + 附加补贴
-  const dayTotalMoney = dayPieceMoney + daySetupFee + dayHourlyTotal + (Number(dayRecord.dailyBonus) || 0);
+  // 出勤餐费补贴
+  const mealRate = Number(appSettings.value?.mealSubsidyDaily !== undefined ? appSettings.value.mealSubsidyDaily : 6.0);
+  const dayMealSubsidy = (dayRecord.attendanceType || 'work') === 'work' ? mealRate : 0;
+
+  // 当日总金额 = 计件工钱 + 调机费 + 零工工钱 + 餐费补贴 + 附加补贴
+  const dayTotalMoney = dayPieceMoney + daySetupFee + dayHourlyTotal + dayMealSubsidy + (Number(dayRecord.dailyBonus) || 0);
 
   return {
     ...dayRecord,
@@ -501,6 +513,7 @@ const selectedDayRecord = computed(() => {
     daySetupFee,
     daySetupCount,
     dayHourlyTotal,
+    dayMealSubsidy,
     dayTotalMoney
   };
 });

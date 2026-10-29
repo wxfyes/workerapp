@@ -93,6 +93,31 @@
           </div>
         </div>
       </div>
+
+      <!-- 每日固定餐费补贴 (出勤自动算，不上班不计) -->
+      <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 700; margin-bottom: 0;">🍱 每日固定餐费补贴 (元/出勤天)</label>
+          <span class="badge badge-gold" style="font-size: 10px;">出勤全天自动计入</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span style="font-size: 16px; color: var(--accent-gold); font-weight: 700;">¥</span>
+          <input 
+            v-model.number="settings.mealSubsidyDaily" 
+            type="number" 
+            step="0.5"
+            min="0"
+            class="form-input" 
+            placeholder="6.0"
+            style="font-size: 18px; font-weight: 800; color: var(--accent-gold-light); padding: 6px;"
+            @change="saveCurrentSettings"
+          />
+          <span style="font-size: 13px; color: var(--text-muted); margin-left: 4px;">元/天</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-sub); margin-top: 4px;">
+          默认 6 元/天。每天出勤全天自动计入总收入，不上班（公休/请假）自动为 0，以后变动随时可改。
+        </div>
+      </div>
     </div>
 
     <!-- 2. 工龄补贴发放模式 -->
@@ -406,6 +431,7 @@ const settings = ref({
   doublePiecePrice: 0.015,
   defaultSetupFee: 5.0,
   defaultHourlyRate: 15.0,
+  mealSubsidyDaily: 6.0,
   seniorityMode: 'monthly',
   defaultSeniorityPay: 200,
   halfYearSeniorityAmount: 1200,
