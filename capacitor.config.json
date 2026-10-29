@@ -1,0 +1,8 @@
+{
+  "appId": "com.workerapp.piecerate",
+  "appName": "工友记工",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
